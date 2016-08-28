@@ -4,7 +4,10 @@
 FROM ubuntu:14.04
 MAINTAINER Volkan Unsal <spocksplanet@gmail.com>
 
-# Configuring locales
+# Explicitly set user/group IDs
+RUN groupadd -r postgres --gid=999 && useradd -r -g postgres --uid=999 postgres
+
+# Configure locales
 ENV DEBIAN_FRONTEND noninteractive
 RUN dpkg-reconfigure locales && \
       locale-gen en_US.UTF-8 && \
@@ -13,12 +16,15 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
-# Configure Postgres
+# Configure ENV vars for Postgres
 ENV PG_MAJOR 9.3
 ENV POSTGIS_MAJOR 2.1
 
 # Install prerequisite software packages
 RUN apt-get update \
+    #  PostgreSQL database-cluster manager
+    && apt-get install -y postgresql-common \
+    && sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf \
     && apt-get install -y --no-install-recommends \
       wget \
       build-essential \
@@ -28,17 +34,17 @@ RUN apt-get update \
       checkinstall \
       git-core \
       git \
-      "postgresql-plpython-$PG_MAJOR" \
       python2.7-dev \
       python-setuptools \
       libpq-dev \
-      "postgresql-client-$PG_MAJOR" \
+      "postgresql-$PG_MAJOR" \
       "postgresql-contrib-$PG_MAJOR" \
-      "postgresql-server-dev-$PG_MAJOR" \
       "postgresql-plpython-$PG_MAJOR" \
       "postgresql-$PG_MAJOR-plproxy" \
-      "postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR" \
+      "postgresql-client-$PG_MAJOR" \
+      "postgresql-server-dev-$PG_MAJOR" \
       "postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts" \
+      "postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR" \
       postgis \
       pgtune \
       ca-certificates \
@@ -59,9 +65,18 @@ RUN export ARCH \
     && chmod +x /usr/local/bin/gosu \
     && gosu nobody true
 
+# Make the sample config easier to munge (and "correct by default")
+RUN mv -v /usr/share/postgresql/$PG_MAJOR/postgresql.conf.sample /usr/share/postgresql/ \
+  && ln -sv ../postgresql.conf.sample /usr/share/postgresql/$PG_MAJOR/ \
+  && sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" /usr/share/postgresql/postgresql.conf.sample
+
+# TODO: Explain what's going on here. Why is this necessary?
+# What goes into the /var/run folder????
+RUN mkdir -p /var/run/postgresql && chown -R postgres /var/run/postgresql
+
 # Configure Git
-RUN git config --global user.email user@example.com
-RUN git config --global user.name "User"
+RUN git config --global user.email spocksplanet@gmail.com
+RUN git config --global user.name "Volkan Unsal"
 
 # Install schema_triggers
 RUN git clone https://github.com/CartoDB/pg_schema_triggers.git
