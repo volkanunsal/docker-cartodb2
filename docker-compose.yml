@@ -1,0 +1,23 @@
+version: '2'
+services:
+  carto-api:
+    container_name: 'carto-api'
+    image: carto-api
+    build: ./carto-api
+    links:
+      - postgres
+      - redis
+      - statsd
+    ports:
+      - "8080:8080"
+  postgres:
+    container_name: 'postgres'
+    build: ./postgres
+    ports:
+      - "5434:5432"
+  redis:
+    container_name: 'redis'
+    image: redis
+  statsd:
+    container_name: 'statsd'
+    image: hopsoft/graphite-statsd

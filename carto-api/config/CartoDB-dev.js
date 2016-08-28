@@ -8,7 +8,7 @@ module.exports.useProfiler = true;
 module.exports.log_format   = '[:date] :req[X-Real-IP] :method :req[Host]:url :status :response-time ms -> :res[Content-Type] (:res[X-SQLAPI-Profiler])';
 // If log_filename is given logs will be written there, in append mode. Otherwise stdout is used (default).
 // Log file will be re-opened on receiving the HUP signal
-module.exports.log_filename = 'logs/cartodb-sql-api.log';
+// module.exports.log_filename = 'logs/cartodb-sql-api.log';
 // Regular expression pattern to extract username
 // from hostname. Must have a single grabbing block.
 module.exports.user_from_host = '^([^\\.]+)\\.';
@@ -23,9 +23,9 @@ module.exports.db_user      = 'development_cartodb_user_<%= user_id %>';
 // Supported labels: 'user_id', 'user_password' (both read from redis)
 module.exports.db_user_pass = '<%= user_password %>'
 // Name of the anonymous PostgreSQL user
-module.exports.db_pubuser   = 'publicuser';
+module.exports.db_pubuser   = 'postgres';
 // Password for the anonymous PostgreSQL user
-module.exports.db_pubuser_pass   = 'public';
+module.exports.db_pubuser_pass = '';
 module.exports.db_host      = 'postgres';
 module.exports.db_port      = '5432';
 // Max database connections in the pool

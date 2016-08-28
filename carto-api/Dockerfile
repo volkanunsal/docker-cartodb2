@@ -1,7 +1,7 @@
 #
 # Carto API container
 #
-FROM ubuntu:14.04
+FROM phusion/baseimage:0.9.18
 MAINTAINER Volkan Unsal <spocksplanet@gmail.com>
 
 # Configuring locales
@@ -24,11 +24,12 @@ RUN apt-get update &&\
     openssl \
     python2.7-dev \
     python-setuptools \
-  --no-install-recommends &&\
-  rm -rf /var/lib/apt/lists/*
+    python-gdal \
+    gdal-bin \
+  --no-install-recommends
 
-RUN git config --global user.email spocksplanet@gmail.com
-RUN git config --global user.name "Volkan Unsal"
+RUN git config --global user.email spocksplanet@gmail.com \
+  && git config --global user.name "Volkan Unsal"
 
 # ogr2ogr2 static build, see https://github.com/CartoDB/cartodb/wiki/How-to-build-gdal-and-ogr2ogr2
 RUN git clone https://github.com/OSGeo/gdal /opt/ogr2ogr2
@@ -50,6 +51,12 @@ RUN git remote add cartodb https://github.com/cartodb/gdal \
 # Install NodeJS
 RUN curl https://nodejs.org/download/release/v0.10.41/node-v0.10.41-linux-x64.tar.gz| tar -zxf - --strip-components=1 -C /usr
 
+# Install postgres-client and libpq-dev (required by https://github.com/CartoDB/node-postgres/blob/cdb-2.6/binding.gyp)
+RUN apt-get update &&\
+  apt-get install -y -q \
+  postgresql-9.3 \
+  libpq-dev
+
 # Install SQL API
 RUN git clone https://github.com/CartoDB/CartoDB-SQL-API /CartoDB-SQL-API
 WORKDIR /CartoDB-SQL-API
@@ -67,8 +74,15 @@ COPY ./config/CartoDB-dev.js \
 
 EXPOSE 8080
 
-COPY ./startup.sh /opt/startup.sh
+# runit entries. These are scripts to run as daemons after bootup.
+# RUN mkdir /etc/service/node
+# ADD ./daemons/node.sh /etc/service/node/run
 
-WORKDIR /CartoDB-SQL-API
-CMD ["/bin/bash", "/opt/startup.sh"]
+# Scripts
+RUN mkdir -p /etc/my_init.d
+ADD my_init.d/* /etc/my_init.d/
 
+CMD ["/sbin/my_init"]
+
+# Clean up APT when done.
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
