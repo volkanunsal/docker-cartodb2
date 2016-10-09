@@ -12,6 +12,7 @@ services:
       - "8080:8080"
   postgres:
     container_name: 'postgres'
+    image: carto-postgres
     build: ./postgres
     ports:
       - "5434:5432"
